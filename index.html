@@ -25,6 +25,13 @@
 		left: 0;
 		z-index: 99;
 	}
+	#chs div{
+		width: 150px;
+		height: 150px;
+	}
+	#chs:after {
+		clear: both;
+	}
 </style>
 <body>
 <script>
@@ -43,12 +50,13 @@
 
 		//const 不支持的浏览器换成var
 		const qsa = doc.querySelectorAll,
-			$ = function (str) {
-				var t = qsa.call(doc, str);
+			$ = function (n) {
+				if(n.nodeType) return n;
+				var t = qsa.call(doc, n);
 				return t.length === 0 ? false : (t.length > 1 ? t : t[0]);
 			};
 
-		function Circular(O, callback){
+		function Circular(O){
 
 			//Object.getOwnPropertyNames safari 5
 			if(!O || Object.keys(O).length == 0) jjreturn;
@@ -58,9 +66,22 @@
 
 			fn.constructor = self;
 
-			fn.setting = function (){
+			this.canvas = doc.createElement('canvas');
+			try {
+				this.q = this.canvas.getContext("2d");
+			}catch(e){
+				return this;
+			}
 
-				if(!this.q) return false;
+			this.diameter = +O.diameter || 200;
+			this.radius = +O.radius || 20;
+
+			this.x = this.y = this.diameter/2;
+			this.r = (this.x - this.radius / 2) ;
+			this.color = O.color || '#ccc';
+
+
+			fn.setting = function (){
 
 				this.canvas.width = this.diameter;
 				this.canvas.height = this.diameter;
@@ -80,20 +101,7 @@
 			}
 			fn.init || (fn.init = function (){
 
-				this.canvas = doc.createElement('canvas');
-				try {
-					this.q = this.canvas.getContext("2d");
-				}catch(e){
-					return this;
-				}
 
-
-				this.diameter = +O.diameter || 200;
-				this.radius = +O.radius || 20;
-
-				this.x = this.y = this.diameter/2;
-				this.r = (this.x - this.radius / 2) ;
-				this.color = O.color || '#ccc';
 				this.setting();
 
 				return this;
@@ -124,6 +132,22 @@
 					chs: ['天','小时', '分', '秒'],
 					en: ['DAYS','HOURS', 'MINUTES', 'SECONDS']
 				};
+
+		    var property = {
+			    $frame: doc.createDocumentFragment(),
+			    $parent: $(O.parent),
+			    diff:0,
+			    interval: null,
+			    lang: O.lang || 'chs',
+			    callback: function (){
+				    return 'function' == typeof(callback)? callback : function(){}
+			    },
+			    endTime: new Date(O.endTime)
+		    }
+
+		    Object.keys(property).forEach(function (a, b){
+			    this[a] || (this[a] = typeof(property[a]) ==='function'? property[a]() : property[a]);
+		    }.bind(this))
 
 			fn.constructor = self;
 			/**
@@ -169,6 +193,7 @@
 			 *
 			 * */
 			fn.createCircular = function (){
+
 				var i = 0,
 					t = O.color;
 
@@ -179,6 +204,7 @@
 					O['c'+i] &&  (O.color = O['c'+i]);//定制圆环颜色c1, c2, c3, c4
 
 					this['c' + i] = new Circular(O);
+
 				}
 
 				return this;
@@ -191,6 +217,7 @@
 			 *
 			 * */
 			fn.create = function (){
+
 				var t,
 					c1,
 					c2,
@@ -321,25 +348,6 @@
 			 *
 			 * */
 			fn.init || (fn.init = function (){
-
-				if(Object.keys(O).length == 0 /*|| !this.timeValide(O.endTime)*/) return;
-
-				var property = {
-					$frame: doc.createDocumentFragment(),
-					$parent: $(O.parent),
-					diff:0,
-					interval: null,
-					lang: O.lang || 'chs',
-					callback: function (){
-						return 'function' == typeof(callback)? callback : function(){}
-					},
-					endTime: new Date(O.endTime)
-				}
-
-				Object.keys(property).forEach(function (a, b){
-					this[a] || (this[a] = typeof(property[a]) ==='function'? property[a]() : property[a]);
-				}.bind(this))
-
 				this.createCircular(O).create().start();
 
 				return this;
@@ -350,7 +358,8 @@
 
 	}(this, document)
 </script>
-
+<div id="chs"></div>
+<p style="clear: both"></p>
 <script>
 
 	!function (){
@@ -373,9 +382,20 @@
 		},function (){                      //可选 回调 倒计时结束时调用
 
 		});
+
+		new Countdown({
+			endTime: '2016-12-12 12:35:35',
+			color: 'red',
+			bgColor: '#eee',
+			diameter: 150,
+			radius: 15,
+			parent: document.querySelector('div'),
+		});
+
 	}()
 
 </script>
+
 </body>
 </html>
 
