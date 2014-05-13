@@ -135,7 +135,9 @@
 
 		    var property = {
 			    $frame: doc.createDocumentFragment(),
-			    $parent: $(O.parent),
+			    $parent: function (){
+				    return O.parent ? $(O.parent): null;
+			    },
 			    diff:0,
 			    interval: null,
 			    lang: O.lang || 'chs',
@@ -349,7 +351,6 @@
 			 * */
 			fn.init || (fn.init = function (){
 				this.createCircular(O).create().start();
-
 				return this;
 			})
 
@@ -364,6 +365,8 @@
 
 	!function (){
 
+
+		//e.g 1
 		var t = new Date;
 			t.setMonth(t.getMonth()+2);
 
@@ -383,14 +386,16 @@
 
 		});
 
-		new Countdown({
+		//e.g 2
+
+		var circle = new Countdown({
 			endTime: '2016-12-12 12:35:35',
 			color: 'red',
 			bgColor: '#eee',
 			diameter: 150,
-			radius: 15,
-			parent: document.querySelector('div'),
+			radius: 15
 		});
+		document.querySelector('div').appendChild(circle.$frame);
 
 	}()
 
