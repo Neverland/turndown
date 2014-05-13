@@ -54,9 +54,9 @@
 			if(!O || Object.keys(O).length == 0) jjreturn;
 
 			var self = arguments.callee,
-				that = this,
-				fn = self.prototype,
-				PI = Math.PI;
+				fn = self.prototype;
+
+			fn.constructor = self;
 
 			fn.setting = function (){
 
@@ -112,14 +112,13 @@
 			if(!O || Object.keys(O).length == 0) return;
 
 			var self = arguments.callee,
-				that = this,
 				fn = self.prototype,
 				META = {
 					chs: ['天','小时', '分', '秒'],
 					en: ['DAYS','HOURS', 'MINUTES', 'SECONDS']
 				};
 
-			fn.constructor = fn;
+			fn.constructor = self;
 			/**
 			 * @name timeValide
 			 * @function
