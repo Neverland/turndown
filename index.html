@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,user-scalable=0">
+	<title>turndown-倒计时</title>
+</head>
+<style>
+	.circular {
+		width: 100px;
+		height: 100px;
+		overflow: hidden;
+		position: relative;
+		float: left;
+	}
+	.front {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 100;
+	}
+	.back {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 99;
+	}
+</style>
+<body>
+<script>
+	// copyright enix@foxmail.com
+	!function (window, doc, undefined){
+		//function.bind shim实现 ios5
+		(function(){}.bind) || (Function.prototype.bind = function (scope) {
+			var me = this,slice = [].slice ,
+				args = slice.call(arguments,1);
+
+			return function () {
+				return me.apply(scope , args.concat(slice.call(arguments)));
+			}
+			return this;
+		});
+
+		//const 不支持的浏览器换成var
+		const qsa = doc.querySelectorAll,
+			$ = function (str) {
+				var t = qsa.call(doc, str);
+				return t.length === 0 ? false : (t.length > 1 ? t : t[0]);
+			};
+
+		function Circular(O, callback){
+
+			//Object.getOwnPropertyNames safari 5
+			if(!O || Object.keys(O).length == 0) jjreturn;
+
+			var self = arguments.callee,
+				that = this,
+				fn = self.prototype,
+				PI = Math.PI;
+
+			fn.setting = function (){
+
+				if(!this.q) return false;
+
+				this.canvas.width = this.diameter;
+				this.canvas.height = this.diameter;
+				this.q.lineWidth = this.radius;
+				this.q.strokeStyle = this.color;
+
+				return this;
+			}
+			fn.render = function (start, end){
+				this.q.clearRect(0, 0, this.diameter, this.diameter);
+				this.q.beginPath();
+				this.q.arc(this.x, this.y, this.r, start, end, true);
+				this.q.stroke();
+				this.q.closePath();
+
+				return this;
+			}
+			fn.init || (fn.init = function (){
+
+				this.canvas = doc.createElement('canvas');
+				try {
+					this.q = this.canvas.getContext("2d");
+				}catch(e){
+					return this;
+				}
+
+
+				this.diameter = +O.diameter || 200;
+				this.radius = +O.radius || 20;
+
+				this.x = this.y = this.diameter/2;
+				this.r = (this.x - this.radius / 2) ;
+				this.color = O.color || '#ccc';
+				this.setting();
+
+				return this;
+			})
+
+			this.init();
+			return this;
+		}
+		/**
+		 * @name Countdown
+		 * @class Countdown
+		 * @extends Object
+		 * @constructor
+		 * */
+		Countdown = function Count(O, callback){
+
+			if(!O || Object.keys(O).length == 0) return;
+
+			var self = arguments.callee,
+				that = this,
+				fn = self.prototype,
+				META = {
+					chs: ['天','小时', '分', '秒'],
+					en: ['DAYS','HOURS', 'MINUTES', 'SECONDS']
+				};
+
+			fn.constructor = fn;
+			/**
+			 * @name timeValide
+			 * @function
+			 * @description 校检日期字符串
+			 * @param {string} string
+			 * @returns {boolean}
+			 *
+			 * */
+			fn.timeValide = function (string){
+				var dateReg = /\d{4}-\d{1,2}(-\d{1,2})/gi;
+				dateReg.lastIndex = 0
+
+				return dateReg.test(string);
+			}
+			/**
+			 * @name timeFormat
+			 * @function
+			 * @description 格式化剩余日期
+			 * @param {bignumber}
+			 * @returns {array} [1,1,1,1]
+			 *
+			 * */
+			fn.timeFormat = function (t) {
+				if(t<=0){
+					return [0, 0, 0, 0];
+				}
+
+				var b = Math.floor(t/1000),
+					a = [b/86400, b%(86400)/3600, b%(3600)/60, b%60];
+				//天 小时 分 秒
+				a.forEach(function (x,y){
+					a[y] = Math.floor(x);
+				})
+				return a;
+			}
+			/**
+			 * @name createCircular
+			 * @function
+			 * @description 实例化类Circular，产生8个实例
+			 * @returns {object} this
+			 *
+			 * */
+			fn.createCircular = function (){
+				var i = 0,
+					t = O.color;
+
+				for(;i++<8;){
+					O.color = t;
+
+					i>4 && O.bgColor && (O.color = O.bgColor);//后四个圆环为背景
+					O['c'+i] &&  (O.color = O['c'+i]);//定制圆环颜色c1, c2, c3, c4
+
+					this['c' + i] = new Circular(O);
+				}
+
+				return this;
+			}
+			/**
+			 * @name create
+			 * @function
+			 * @description 组装倒计时圆环
+			 * @returns {object} this
+			 *
+			 * */
+			fn.create = function (){
+				var t,
+					c1,
+					c2,
+					j = 0,
+					div = doc.createElement('div');
+
+				for(;j++<4;){
+
+					t = null;
+					c1 = null;
+					c2 = null;
+
+					t = div.cloneNode(false);
+					t.className = 'circular c' + j;
+
+					c1 = this['c' + j].canvas;
+					c2 = this['c' + (j + 4)];
+
+					c1.className = 'front';
+					c2.canvas.className = 'back';
+
+					t.appendChild(c1);
+					t.appendChild(c2.canvas);
+
+					this.$frame.appendChild(t);
+
+					c2.render(0, Math.PI * 2);
+					this.drawMassage(c2, META[this.lang][j-1], c2.diameter/2, c2.diameter/2+20);
+
+				}
+				this.$parent && this.$parent.appendChild(this.$frame);
+
+				return this;
+			}
+			/**
+			 * @name drawMassage
+			 * @function
+			 * @description 渲染信息至canvas
+			 * @param {object} c1/c2...c8
+			 * @param {string} message
+			 * @param {number} x
+			 * @param {number} y
+			 * @param {string} css color
+			 * @param {string} css font
+			 * @returns {object} this
+			 *
+			 * */
+			fn.drawMassage = function (c, text, x, y, color, font){
+
+				c.q.font = font || '15px Verdana, Arial, Helvetica, sans-serif';
+				c.q.textAlign = 'center';
+				c.q.fillStyle = color ||'#000';
+
+				c.q.fillText(text, x, y, 80);
+
+				return this;
+			}
+			/**
+			 * @name start
+			 * @function
+			 * @description 倒计时启动
+			 * @returns {object} this
+			 *
+			 * */
+			fn.start = function (){
+
+				var attach = requestAnimationFrame || setInterval,
+					detach = cancelAnimationFrame || clearInterval,
+					fn = function (){
+						var i = 4;
+						this.time = this.getTimeArray();
+
+						this.circle(this.c1, this.time[0], Math.floor(this.diff/ (86400000)));
+						this.circle(this.c2, this.time[1], 24);
+						this.circle(this.c3, this.time[2], 60);
+						this.circle(this.c4, this.time[3], 60);
+						//渲染 时间信息(this.time)至 canvas c1, c2, c3, c4
+						for(;i--;){
+							this.drawMassage(this['c' + (i+1)], this.time[i], this['c' + (i+1)].diameter/2, this['c' + (i+1)].diameter/2, 'red');
+						}
+
+					}.bind(this);
+
+				this.interval = attach(function (){
+					if(this.diff < 0){
+						this.callback.call(this);
+						detach(this.interval);
+						return this;
+					}
+					attach == requestAnimationFrame && attach(arguments.callee.bind(this));
+
+					fn();
+
+				}.bind(this), 1000);
+
+				return this;
+			}
+			/**
+			 * @name circle
+			 * @function
+			 * @description 渲染圆环
+			 * @param {object} c1/c2...c8
+			 * @param {number} 目标数值
+			 * @param {number} 总量
+			 * @returns {object} this
+			 *
+			 * */
+			fn.circle = function (self, a, b){
+				self.render.call(self, Math.PI*2*(a/b) - (Math.PI/2), -Math.PI/2);
+				return this;
+			}
+			/**
+			 * @name getTimeArray
+			 * @function
+			 * @description 通过时差获取格式化后的数组
+			 * @returns {array} [1,1,1,1]
+			 *
+			 * */
+			fn.getTimeArray = function (){
+				this.diff = +this.endTime - +new Date;
+				return this.timeFormat(this.diff);
+			}
+			/**
+			 * @name init
+			 * @function
+			 * @description 设置countdown环境
+			 * @returns {object} this
+			 *
+			 * */
+			fn.init || (fn.init = function (){
+
+				if(Object.keys(O).length == 0 || !this.timeValide(O.endTime)) return;
+
+				var property = {
+					$frame: doc.createDocumentFragment(),
+					$parent: $(O.parent),
+					diff:0,
+					interval: null,
+					lang: O.lang || 'chs',
+					callback: function (){
+						return 'function' == typeof(callback)? callback : function(){}
+					},
+					endTime: new Date(O.endTime)
+				}
+
+				Object.keys(property).forEach(function (a, b){
+					this[a] || (this[a] = typeof(property[a]) ==='function'? property[a]() : property[a]);
+				}.bind(this))
+
+				this.createCircular(O).create().start();
+
+				return this;
+			})
+
+			return this.init();
+		}
+
+	}(this, document)
+</script>
+
+<script>
+	new Countdown({
+		endTime: '2014-5-17 15:12:00',  //必选 结束时间
+		bgColor: 'pink',                //可选 背景圆环色
+		c1: '#999',                     //可选 天 圆环色
+		c2: 'yellow',                   //可选 小时 间圆环色
+		c3: 'red',                      //可选 分 圆环色
+		c4: 'black',                    //可选 秒 圆环色
+		color: 'deeppink',              //可选 4个计时圆环色，设置才c1,c1...会被覆盖
+		parent: 'body',                 //可选 倒计时插入目标节点, 没有设置，请手动插入实例$frame至目标节点 如: document.body.appendChild(instance.$frame)
+		diameter: 100,                  //可选 直径 默认200
+		radius: 10,                     //可选 直径 默认20
+		lang:'en'                       //可选 语言 默认chs
+	},function (){                      //可选 回调 倒计时结束时调用
+
+	});
+</script>
+</body>
+</html>
+
+<script type="text/eg">
+	function Circular(O) {
+		return this;
+	}
+
+	Circular.prototype = {}
+
+	//寄生继承
+	function Count(O){
+		Circular.call(this, O);
+		return this.Init();
+	}
+	Count.prototype = new Circular();
+	Count.prototype.constructor = Count;
+	Count.methods = {
+		Init: function (){
+		}
+	}
+
+	Object.keys(Count.methods).forEach(function (a){
+		this[a] || (this[a] = Count.methods[a]);
+	}, Count.prototype)
+</script>
